@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typical RNG Calculator</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f8f9fa;
+            color: #333;
+        }
+        .container { 
+            display: grid; 
+            grid-template-columns: 380px 1fr; 
+            gap: 25px; 
+            align-items: start;
+        }
+        .input-section { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+        }
+        .results-section { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 800px;
+        }
+        .form-group { margin-bottom: 20px; }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #555;
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 10px 12px; 
+            border: 2px solid #e1e5e9; 
+            border-radius: 6px; 
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button:hover { background: #0056b3; }
+        .btn-full { width: 100%; }
+        .btn-small { 
+            padding: 6px 12px; 
+            font-size: 14px; 
+            margin: 2px;
+        }
+        .result-card { 
+            background: white; 
+            border: 1px solid #e1e5e9; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin: 15px 0; 
+        }
+        .progress-bar { 
+            background: #e9ecef; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            height: 20px; 
+            margin: 5px 0;
+        }
+        .progress-fill { 
+            background: linear-gradient(90deg, #4CAF50, #45a049); 
+            height: 100%; 
+            transition: width 0.3s; 
+        }
+        .sans-list { max-height: 500px; overflow-y: auto; }
+        .sans-item { 
+            padding: 12px; 
+            border-bottom: 1px solid #f1f3f4; 
+            transition: background 0.2s;
+        }
+        .sans-item:hover { background: #f8f9fa; }
+        .raw-badge { 
+            background: #dc3545; 
+            color: white; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            font-size: 0.75em; 
+            margin-left: 8px;
+        }
+        .limited-badge { 
+            background: #ffc107; 
+            color: #856404; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            font-size: 0.75em; 
+            margin-left: 8px;
+        }
+        .search-container { position: relative; }
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .search-result-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        .search-result-item:hover {
+            background: #007bff;
+            color: white;
+        }
+        .selected-sans {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        .selected-sans-item {
+            background: #e9ecef;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .remove-sans {
+            cursor: pointer;
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .help-icon {
+            color: #6c757d;
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 0.9em;
+        }
+        .help-icon:hover {
+            color: #007bff;
+        }
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px;
+        }
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #e1e5e9;
+        }
+        .donate-link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .donate-link:hover {
+            text-decoration: underline;
+        }
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+        h2 { color: #34495e; margin: 25px 0 15px 0; }
+        h3 { color: #2c3e50; margin: 20px 0 12px 0; }
+        h4 { color: #495057; margin: 15px 0 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Typical RNG Calculator</h1>
+    <p style="color: #666; margin-bottom: 30px;">Calculate expected values and probabilities for Typical RNG game</p>
+    
+    <div class="container">
+        <div class="input-section">
+            <h3>Calculator Settings</h3>
+            
+            <div class="form-group">
+                <label>Server Luck Multiplier:</label>
+                <input type="number" id="server_luck" value="8" min="1" max="100">
+            </div>
+            
+            <div class="form-group">
+                <label>Time Period (seconds):</label>
+                <input type="number" id="time_seconds" value="3600" min="1">
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    Unobtainable (Limited) Sans Settings
+                    <span class="help-icon" onclick="openModal('limitedModal')">?</span>
+                </label>
+                <button type="button" onclick="openModal('limitedModal')" class="btn-full">Configure Unobtainable Sans</button>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    Custom Raw Sans(!luck)
+                    <span class="help-icon" onclick="openModal('rawModal')">?</span>
+                </label>
+                <button type="button" onclick="openModal('rawModal')" class="btn-full">Configure Raw Sans(!luck)</button>
+            </div>
+            
+            <div class="form-group">
+                <label>Select Sans to Analyze:</label>
+                <div class="search-container">
+                    <input type="text" id="sans_search" placeholder="Search sans...">
+                    <div class="search-results" id="search_results"></div>
+                </div>
+                <div class="selected-sans" id="selected_sans"></div>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    Custom Sans
+                    <span class="help-icon" onclick="openModal('customHelpModal')">?</span>
+                </label>
+                <textarea id="custom_sans" rows="4" placeholder='{"CustomSans": 1000}'></textarea>
+            </div>
+            
+            <button onclick="calculate()" class="btn-full">Calculate Expectations</button>
+        </div>
+        
+        <div class="results-section" id="results">
+            <h3>Calculation Results</h3>
+            <div id="loading" style="display: none; text-align: center; padding: 40px;">
+                <div style="font-size: 1.2em; margin-bottom: 10px;">Calculating...</div>
+                <div style="color: #666;">This may take a few seconds</div>
+            </div>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Created by <strong>@tux_koh</strong></p>
+        <p>
+            <a href="https://www.roblox.com/game-pass/1540670718/donation" 
+               target="_blank" 
+               class="donate-link">
+                donate me 10 bobux :D
+            </a>
+        </p>
+    </div>
+
+    <!-- Limited Sans Modal -->
+    <div id="limitedModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Unobtainable (Limited) Sans Configuration</h3>
+                <span class="close" onclick="closeModal('limitedModal')">&times;</span>
+            </div>
+            <p>Select which limited sans should be included in the calculation:</p>
+            
+            <div class="controls-row">
+                <button type="button" onclick="selectAllLimited()" class="btn-small">Select All</button>
+                <button type="button" onclick="deselectAllLimited()" class="btn-small">Deselect All</button>
+                <button type="button" onclick="invertLimitedSelection()" class="btn-small">Invert Selection</button>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" id="limited_search" placeholder="Search limited sans..." oninput="filterLimitedSans()">
+            </div>
+            
+            <div class="checkbox-grid" id="limited_checkboxes">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            
+            <button type="button" onclick="saveLimitedSettings()" class="btn-full">Save Settings</button>
+        </div>
+    </div>
+
+    <!-- Raw Sans Modal -->
+    <div id="rawModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Custom Raw Sans(!luck) Configuration</h3>
+                <span class="close" onclick="closeModal('rawModal')">&times;</span>
+            </div>
+            <p>Select which sans should be treated as RAW (not affected by server luck):</p>
+            
+            <div class="controls-row">
+                <button type="button" onclick="selectAllRaw()" class="btn-small">Select All</button>
+                <button type="button" onclick="deselectAllRaw()" class="btn-small">Deselect All</button>
+                <button type="button" onclick="invertRawSelection()" class="btn-small">Invert Selection</button>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" id="raw_search" placeholder="Search sans..." oninput="filterRawSans()">
+            </div>
+            
+            <div class="checkbox-grid" id="raw_checkboxes">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            
+            <button type="button" onclick="saveRawSettings()" class="btn-full">Save Settings</button>
+        </div>
+    </div>
+
+    <!-- Custom Help Modal -->
+    <div id="customHelpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Custom Sans - How to Use</h3>
+                <span class="close" onclick="closeModal('customHelpModal')">&times;</span>
+            </div>
+            <p><strong>Format:</strong> JSON object with sans names as keys and chance values as numbers</p>
+            <p><strong>Example:</strong></p>
+            <pre style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+{
+    "MyCustomSans": 1000,
+    "AnotherSans": 5000,
+    "RareSans": 10000
+}</pre>
+            <p><strong>Notes:</strong></p>
+            <ul>
+                <li>Chance values work the same as default sans</li>
+                <li>Custom sans will be added to the existing list</li>
+                <li>Duplicate names will overwrite default values</li>
+                <li>To make custom sans RAW, use the Raw Sans configuration</li>
+            </ul>
+            <button type="button" onclick="closeModal('customHelpModal')" class="btn-full">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Default sans data
+        const DEFAULT_SANS_DATA = {
+            "Little": 2, "classic": 3, "Fell": 5, "outer": 8, "horror": 25,
+            "Fresh": 32, "After": 44, "Killer": 66, "Dream": 77, "RuinsDust": 12,
+            "SnowdinDust": 20, "Photo Negative": 200, "Assured Prey": 500, "gencide": 900,
+            "C!insanity": 3666, "Avenge": 3449, "Ink": 5000, "Error": 5000, "Fatal error": 55555,
+            "Reaper": 99999, "Pesti": 3500, "DD": 16666, "Lethal Deal": 50000, "Hyper-dust": 99999,
+            "clown": 69420, "undersanity": 500000, "Corrupted insanity": 162162, "Final insanity": 241956,
+            "Superfell": 250000, "Cone": 100000, "Weakened alpha": 250000, "king mutiverse": 333333,
+            "zalgo": 366666, "error404": 404040, "omnipotent": 555555, "infected": 666666,
+            "fatal corruption": 666666, "virus404": 999999, "HIM (true insanity)": 1666666,
+            "alpha judge": 399999, "errordust": 444444, "true dust": 500000, "Shanghaivania": 1500000,
+            "lulzsec": 777777, "containment": 800000, "negative error404": 1404040, "omnithorn": 2222220,
+            "dustdustdust": 2666666, "final dust": 2999999, "butterfly404": 4040404, "error666": 6666666,
+            "overkill": 16000000, "loading": 2222222, "code rainbow": 2222222, "distortion": 3666666,
+            "entity0": 11111111, "anti god": 6000000, "CTI (corrupted true insanity)": 66666666,
+            "roland": 15000000
+        };
+
+        let selectedSans = new Set();
+        let limitedSans = new Set(['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland']);
+        let rawSans = new Set(['CTI (corrupted true insanity)', 'error666', 'negative error404', 'anti god']);
+        const allSans = Object.keys(DEFAULT_SANS_DATA);
+        const defaultLimited = ['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland'];
+        
+        // Initialize modals when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DEBUG: Page loaded, initializing modals");
+            initializeLimitedModal();
+            initializeRawModal();
+            console.log("DEBUG: Initial rawSans:", Array.from(rawSans));
+        });
+        
+        function initializeLimitedModal() {
+            const container = document.getElementById('limited_checkboxes');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            defaultLimited.forEach(sans => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                const safeId = 'limited_' + sans.replace(/[^a-zA-Z0-9]/g, '_');
+                div.innerHTML = `
+                    <input type="checkbox" id="${safeId}" ${limitedSans.has(sans) ? 'checked' : ''}>
+                    <label for="${safeId}">${sans}</label>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function initializeRawModal() {
+            const container = document.getElementById('raw_checkboxes');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            allSans.forEach(sans => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                const safeId = 'raw_' + sans.replace(/[^a-zA-Z0-9]/g, '_');
+                div.innerHTML = `
+                    <input type="checkbox" id="${safeId}" ${rawSans.has(sans) ? 'checked' : ''}>
+                    <label for="${safeId}">${sans}</label>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function filterLimitedSans() {
+            const query = document.getElementById('limited_search').value.toLowerCase();
+            const items = document.querySelectorAll('#limited_checkboxes .checkbox-item');
+            
+            items.forEach(item => {
+                const label = item.querySelector('label').textContent.toLowerCase();
+                item.style.display = label.includes(query) ? 'flex' : 'none';
+            });
+        }
+        
+        function filterRawSans() {
+            const query = document.getElementById('raw_search').value.toLowerCase();
+            const items = document.querySelectorAll('#raw_checkboxes .checkbox-item');
+            
+            items.forEach(item => {
+                const label = item.querySelector('label').textContent.toLowerCase();
+                item.style.display = label.includes(query) ? 'flex' : 'none';
+            });
+        }
+        
+        function selectAllLimited() {
+            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+        
+        function deselectAllLimited() {
+            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+        
+        function invertLimitedSelection() {
+            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = !checkbox.checked;
+            });
+        }
+        
+        function selectAllRaw() {
+            document.querySelectorAll('#raw_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+        
+        function deselectAllRaw() {
+            document.querySelectorAll('#raw_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+        
+        function invertRawSelection() {
+            document.querySelectorAll('#raw_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = !checkbox.checked;
+            });
+        }
+        
+        function saveLimitedSettings() {
+            const newLimitedSans = new Set();
+            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
+                const label = checkbox.nextElementSibling.textContent;
+                newLimitedSans.add(label);
+            });
+            
+            limitedSans = newLimitedSans;
+            console.log("DEBUG: Updated limitedSans:", Array.from(limitedSans));
+            
+            closeModal('limitedModal');
+            alert(`Limited sans settings saved! ${limitedSans.size} sans will be included.`);
+        }
+        
+        function saveRawSettings() {
+            const newRawSans = new Set();
+            document.querySelectorAll('#raw_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
+                const label = checkbox.nextElementSibling.textContent;
+                newRawSans.add(label);
+            });
+            
+            rawSans = newRawSans;
+            console.log("DEBUG: Updated rawSans:", Array.from(rawSans));
+            
+            closeModal('rawModal');
+            alert(`Raw sans settings saved! ${rawSans.size} sans marked as RAW.`);
+        }
+        
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Search functionality
+        document.getElementById('sans_search').addEventListener('input', async function(e) {
+            const query = e.target.value;
+            const resultsContainer = document.getElementById('search_results');
+            
+            if (query.length < 1) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query: query})
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySearchResults(data.results);
+                }
+            } catch (error) {
+                console.error('Search failed:', error);
+            }
+        });
+        
+        function displaySearchResults(results) {
+            const container = document.getElementById('search_results');
+            container.innerHTML = '';
+            
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = 'search-result-item';
+                div.textContent = result.name;
+                div.onclick = () => selectSans(result.name);
+                container.appendChild(div);
+            });
+            
+            container.style.display = 'block';
+        }
+        
+        function selectSans(sansName) {
+            if (!selectedSans.has(sansName)) {
+                selectedSans.add(sansName);
+                updateSelectedSansDisplay();
+            }
+            
+            document.getElementById('sans_search').value = '';
+            document.getElementById('search_results').style.display = 'none';
+        }
+        
+        function removeSans(sansName) {
+            selectedSans.delete(sansName);
+            updateSelectedSansDisplay();
+        }
+        
+        function updateSelectedSansDisplay() {
+            const container = document.getElementById('selected_sans');
+            container.innerHTML = '';
+            
+            selectedSans.forEach(sansName => {
+                const div = document.createElement('div');
+                div.className = 'selected-sans-item';
+                div.innerHTML = `
+                    ${sansName}
+                    <span class="remove-sans" onclick="removeSans('${sansName}')">×</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('search_results').style.display = 'none';
+            }
+        });
+        
+        // Main calculation function
+        async function calculate() {
+            const loading = document.getElementById('loading');
+            const resultsContent = document.getElementById('results-content');
+            
+            loading.style.display = 'block';
+            resultsContent.innerHTML = '';
+            
+            try {
+                const customSansText = document.getElementById('custom_sans').value;
+                let customSans = {};
+                if (customSansText.trim()) {
+                    customSans = JSON.parse(customSansText);
+                }
+                
+                // Debug: log what we're sending
+                console.log("=== DEBUG FRONTEND REQUEST ===");
+                console.log("Sending rawSans:", Array.from(rawSans));
+                console.log("Sending limitedSans:", Array.from(limitedSans));
+                console.log("Sending selectedSans:", Array.from(selectedSans));
+                console.log("Server luck:", document.getElementById('server_luck').value);
+                console.log("Time seconds:", document.getElementById('time_seconds').value);
+                
+                const requestData = {
+                    server_luck: parseInt(document.getElementById('server_luck').value),
+                    time_seconds: parseFloat(document.getElementById('time_seconds').value),
+                    include_limited: Array.from(limitedSans),
+                    custom_sans: customSans,
+                    custom_raw: Array.from(rawSans),
+                    selected_sans: Array.from(selectedSans)
+                };
+                
+                console.log("Full request data:", requestData);
+                console.log("=== DEBUG FRONTEND REQUEST END ===");
+                
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.results);
+                } else {
+                    resultsContent.innerHTML = `<div style="color: #dc3545; padding: 20px; text-align: center;">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultsContent.innerHTML = `<div style="color: #dc3545; padding: 20px; text-align: center;">Request failed: ${error}</div>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function displayResults(results) {
+            const content = document.getElementById('results-content');
+            let html = '';
+            
+            // Basic stats
+            html += `<div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">${results.total_sans}</div>
+                    <div class="stat-label">Total Sans Types</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${results.server_luck}x</div>
+                    <div class="stat-label">Server Luck</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${formatTime(results.time_seconds)}</div>
+                    <div class="stat-label">Time Period</div>
+                </div>
+            </div>`;
+            
+            // Selected sans results
+            if (Object.keys(results.selected_results).length > 0) {
+                html += `<div class="result-card">
+                    <h3>Selected Sans Analysis</h3>`;
+                
+                Object.entries(results.selected_results).forEach(([name, data]) => {
+                    html += `
+                    <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                        <h4>${name} ${data.is_raw ? '<span class="raw-badge">RAW</span>' : ''}</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 10px;">
+                            <div>
+                                <strong>Individual Probability:</strong><br>
+                                ${data.individual_probability.toFixed(6)}%
+                            </div>
+                            <div>
+                                <strong>Final Probability:</strong><br>
+                                ${data.base_probability.toFixed(6)}%
+                            </div>
+                            <div>
+                                <strong>Probability in ${formatTime(results.time_seconds)}:</strong><br>
+                                ${data.probability_percent.toFixed(2)}%
+                            </div>
+                            <div>
+                                <strong>Expected Count:</strong><br>
+                                ${data.expected_count.toFixed(4)}
+                            </div>
+                            <div>
+                                <strong>Expected Time for First:</strong><br>
+                                ${formatTime(data.time_first)}
+                            </div>
+                            <div>
+                                <strong>Time for 99% Chance:</strong><br>
+                                ${formatTime(data.time_99_percent)}
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                
+                html += `</div>`;
+            }
+            
+            // High probability ranking
+            html += `<div class="result-card">
+                <h3>High Probability Ranking (Top 20)</h3>
+                <div class="sans-list">`;
+            
+            results.sorted_by_prob.forEach(([name, data], index) => {
+                html += `<div class="sans-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong>${index + 1}. ${name}</strong>
+                        <div>
+                            ${data.is_raw ? '<span class="raw-badge">RAW</span>' : ''}
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span style="min-width: 80px;">${data.probability_percent.toFixed(2)}%</span>
+                        <div class="progress-bar" style="flex: 1;">
+                            <div class="progress-fill" style="width: ${Math.min(data.probability_percent, 100)}%"></div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            html += `</div></div>`;
+            
+            // Rarest sans ranking
+            html += `<div class="result-card">
+                <h3>Rarest Sans Ranking (Top 20)</h3>
+                <div class="sans-list">`;
+            
+            results.sorted_by_rarity.forEach(([name, data], index) => {
+                html += `<div class="sans-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong>${index + 1}. ${name}</strong>
+                        <div>
+                            ${data.is_raw ? '<span class="raw-badge">RAW</span>' : ''}
+                        </div>
+                    </div>
+                    <div style="color: #666; font-size: 0.9em;">
+                        Base Probability: ${data.base_probability.toFixed(6)}% | 
+                        Get Probability: ${data.probability_percent.toFixed(4)}%
+                    </div>
+                </div>`;
+            });
+            
+            html += `</div></div>`;
+            
+            content.innerHTML = html;
+        }
+        
+        function formatTime(seconds) {
+            if (seconds === Infinity) return '∞';
+            if (seconds < 60) return `${seconds.toFixed(1)}s`;
+            if (seconds < 3600) return `${(seconds / 60).toFixed(1)}m`;
+            if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}h`;
+            return `${(seconds / 86400).toFixed(1)}d`;
+        }
+    </script>
+</body>
+</html>
