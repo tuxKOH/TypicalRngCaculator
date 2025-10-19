@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Typical RNG Calculator</title>
     <style>
+        /* Global styles */
         * { box-sizing: border-box; }
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -14,6 +15,8 @@
             background: #f8f9fa;
             color: #333;
         }
+        
+        /* Layout */
         .container { 
             display: grid; 
             grid-template-columns: 380px 1fr; 
@@ -35,6 +38,8 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             min-height: 800px;
         }
+        
+        /* Form elements */
         .form-group { margin-bottom: 20px; }
         label { 
             display: block; 
@@ -54,6 +59,8 @@
             border-color: #007bff;
             outline: none;
         }
+        
+        /* Buttons */
         button { 
             background: #007bff; 
             color: white; 
@@ -72,6 +79,8 @@
             font-size: 14px; 
             margin: 2px;
         }
+        
+        /* Results display */
         .result-card { 
             background: white; 
             border: 1px solid #e1e5e9; 
@@ -91,6 +100,8 @@
             height: 100%; 
             transition: width 0.3s; 
         }
+        
+        /* Sans lists */
         .sans-list { max-height: 500px; overflow-y: auto; }
         .sans-item { 
             padding: 12px; 
@@ -98,6 +109,8 @@
             transition: background 0.2s;
         }
         .sans-item:hover { background: #f8f9fa; }
+        
+        /* Badges for special sans types */
         .raw-badge { 
             background: #dc3545; 
             color: white; 
@@ -106,6 +119,16 @@
             font-size: 0.75em; 
             margin-left: 8px;
         }
+        .blacklisted-badge { 
+            background: #6c757d; 
+            color: white; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            font-size: 0.75em; 
+            margin-left: 8px;
+        }
+        
+        /* Search functionality */
         .search-container { position: relative; }
         .search-results {
             position: absolute;
@@ -129,6 +152,8 @@
             background: #007bff;
             color: white;
         }
+        
+        /* Selected sans display */
         .selected-sans {
             display: flex;
             flex-wrap: wrap;
@@ -149,6 +174,8 @@
             color: #dc3545;
             font-weight: bold;
         }
+        
+        /* Statistics grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -170,6 +197,8 @@
             font-size: 0.9em;
             color: #666;
         }
+        
+        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -207,6 +236,8 @@
         .close:hover {
             color: black;
         }
+        
+        /* Help icons */
         .help-icon {
             color: #6c757d;
             cursor: pointer;
@@ -216,6 +247,8 @@
         .help-icon:hover {
             color: #007bff;
         }
+        
+        /* Checkbox grids for configuration modals */
         .checkbox-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -233,11 +266,15 @@
             gap: 8px;
             padding: 5px;
         }
+        
+        /* Control rows for bulk actions */
         .controls-row {
             display: flex;
             gap: 10px;
             margin: 10px 0;
         }
+        
+        /* Footer */
         .footer {
             text-align: center;
             margin-top: 40px;
@@ -253,38 +290,38 @@
         .donate-link:hover {
             text-decoration: underline;
         }
+        
+        /* Typography */
         h1 { color: #2c3e50; margin-bottom: 10px; }
         h2 { color: #34495e; margin: 25px 0 15px 0; }
         h3 { color: #2c3e50; margin: 20px 0 12px 0; }
         h4 { color: #495057; margin: 15px 0 10px 0; }
-        .blacklisted-badge {
-            background: #6c757d;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.75em;
-            margin-left: 8px;
-        }
     </style>
 </head>
 <body>
+    <!-- Main header -->
     <h1>Typical RNG Calculator</h1>
     <p style="color: #666; margin-bottom: 30px;">Calculate expected values and probabilities for Typical RNG game</p>
     
+    <!-- Main content container -->
     <div class="container">
+        <!-- Input section with configuration options -->
         <div class="input-section">
             <h3>Calculator Settings</h3>
             
+            <!-- Server luck multiplier input -->
             <div class="form-group">
                 <label>Server Luck Multiplier:</label>
                 <input type="number" id="server_luck" value="8" min="1" max="100">
             </div>
             
+            <!-- Time period input -->
             <div class="form-group">
                 <label>Time Period (seconds):</label>
                 <input type="number" id="time_seconds" value="3600" min="1">
             </div>
             
+            <!-- Unobtainable sans configuration -->
             <div class="form-group">
                 <label>
                     Unobtainable Sans List
@@ -293,6 +330,7 @@
                 <button type="button" onclick="openModal('unobtainableModal')" class="btn-full">Configure Unobtainable Sans</button>
             </div>
             
+            <!-- Blacklist sans configuration -->
             <div class="form-group">
                 <label>
                     Blacklist Sans (Hide from results)
@@ -301,6 +339,7 @@
                 <button type="button" onclick="openModal('blacklistedModal')" class="btn-full">Configure Blacklist</button>
             </div>
             
+            <!-- Raw sans configuration -->
             <div class="form-group">
                 <label>
                     Custom Raw Sans(!luck)
@@ -309,6 +348,7 @@
                 <button type="button" onclick="openModal('rawModal')" class="btn-full">Configure Raw Sans(!luck)</button>
             </div>
             
+            <!-- Sans selection for detailed analysis -->
             <div class="form-group">
                 <label>Select Sans to Analyze:</label>
                 <div class="search-container">
@@ -318,6 +358,7 @@
                 <div class="selected-sans" id="selected_sans"></div>
             </div>
             
+            <!-- Custom sans input -->
             <div class="form-group">
                 <label>
                     Custom Sans
@@ -326,19 +367,24 @@
                 <textarea id="custom_sans" rows="4" placeholder='{"CustomSans": 1000}'></textarea>
             </div>
             
+            <!-- Calculate button -->
             <button onclick="calculate()" class="btn-full">Calculate Expectations</button>
         </div>
         
+        <!-- Results display section -->
         <div class="results-section" id="results">
             <h3>Calculation Results</h3>
+            <!-- Loading indicator -->
             <div id="loading" style="display: none; text-align: center; padding: 40px;">
                 <div style="font-size: 1.2em; margin-bottom: 10px;">Calculating...</div>
                 <div style="color: #666;">This may take a few seconds</div>
             </div>
+            <!-- Results content container -->
             <div id="results-content"></div>
         </div>
     </div>
-        <!-- Footer -->
+    
+    <!-- Footer with creator info and donation link -->
     <div class="footer">
         <p>Created by <strong>@tux_koh</strong></p>
         <p>
@@ -370,7 +416,7 @@
             </div>
             
             <div class="checkbox-grid" id="unobtainable_checkboxes">
-                <!-- Will be populated by JavaScript -->
+                <!-- Dynamically populated by JavaScript -->
             </div>
             
             <button type="button" onclick="saveUnobtainableSettings()" class="btn-full">Save Settings</button>
@@ -397,7 +443,7 @@
             </div>
             
             <div class="checkbox-grid" id="blacklisted_checkboxes">
-                <!-- Will be populated by JavaScript -->
+                <!-- Dynamically populated by JavaScript -->
             </div>
             
             <button type="button" onclick="saveBlacklistedSettings()" class="btn-full">Save Settings</button>
@@ -424,14 +470,14 @@
             </div>
             
             <div class="checkbox-grid" id="raw_checkboxes">
-                <!-- Will be populated by JavaScript -->
+                <!-- Dynamically populated by JavaScript -->
             </div>
             
             <button type="button" onclick="saveRawSettings()" class="btn-full">Save Settings</button>
         </div>
     </div>
 
-    <!-- Unobtainable Help Modal -->
+    <!-- Help Modals -->
     <div id="unobtainableHelpModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -444,7 +490,6 @@
         </div>
     </div>
 
-    <!-- Blacklist Help Modal -->
     <div id="blacklistHelpModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -457,7 +502,6 @@
         </div>
     </div>
 
-    <!-- Custom Help Modal -->
     <div id="customHelpModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -482,8 +526,9 @@
             <button type="button" onclick="closeModal('customHelpModal')" class="btn-full">Close</button>
         </div>
     </div>
-        <script>
-        // Default sans data - 修復名稱一致性
+
+    <script>
+        // Default sans data with fixed name consistency
         const DEFAULT_SANS_DATA = {
             "Little": 2, "classic": 3, "Fell": 5, "outer": 8, "horror": 25,
             "Fresh": 32, "After": 44, "Killer": 66, "Dream": 77, "RuinsDust": 12,
@@ -502,11 +547,12 @@
             "roland": 15000000
         };
 
-        let selectedSans = new Set();
-        let unobtainableSans = new Set(['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland']);
-        let blacklistedSans = new Set([]); // 新的 blacklist，只隱藏顯示
-        let rawSans = new Set(['CTI (corrupted true insanity)', 'error666', 'negative error404', 'anti god']);
-        const allSans = Object.keys(DEFAULT_SANS_DATA);
+        // Application state
+        let selectedSans = new Set(); // Sans selected for detailed analysis
+        let unobtainableSans = new Set(['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland']); // Cannot spawn
+        let blacklistedSans = new Set([]); // Hidden from results but affect probabilities
+        let rawSans = new Set(['CTI (corrupted true insanity)', 'error666', 'negative error404', 'anti god']); // Not affected by server luck
+        const allSans = Object.keys(DEFAULT_SANS_DATA); // All available sans names
         
         // Initialize modals when page loads
         document.addEventListener('DOMContentLoaded', function() {
@@ -515,6 +561,7 @@
             initializeRawModal();
         });
         
+        // Initialize unobtainable sans modal with checkboxes
         function initializeUnobtainableModal() {
             const container = document.getElementById('unobtainable_checkboxes');
             if (!container) return;
@@ -533,6 +580,7 @@
             });
         }
         
+        // Initialize blacklisted sans modal with checkboxes
         function initializeBlacklistedModal() {
             const container = document.getElementById('blacklisted_checkboxes');
             if (!container) return;
@@ -551,6 +599,7 @@
             });
         }
         
+        // Initialize raw sans modal with checkboxes
         function initializeRawModal() {
             const container = document.getElementById('raw_checkboxes');
             if (!container) return;
@@ -569,6 +618,7 @@
             });
         }
         
+        // Filter unobtainable sans in modal based on search query
         function filterUnobtainableSans() {
             const query = document.getElementById('unobtainable_search').value.toLowerCase();
             const items = document.querySelectorAll('#unobtainable_checkboxes .checkbox-item');
@@ -579,6 +629,7 @@
             });
         }
         
+        // Filter blacklisted sans in modal based on search query
         function filterBlacklistedSans() {
             const query = document.getElementById('blacklisted_search').value.toLowerCase();
             const items = document.querySelectorAll('#blacklisted_checkboxes .checkbox-item');
@@ -589,6 +640,7 @@
             });
         }
         
+        // Filter raw sans in modal based on search query
         function filterRawSans() {
             const query = document.getElementById('raw_search').value.toLowerCase();
             const items = document.querySelectorAll('#raw_checkboxes .checkbox-item');
@@ -599,6 +651,7 @@
             });
         }
         
+        // Bulk selection functions for unobtainable sans
         function selectAllUnobtainable() {
             document.querySelectorAll('#unobtainable_checkboxes input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = true;
@@ -617,6 +670,7 @@
             });
         }
         
+        // Bulk selection functions for blacklisted sans
         function selectAllBlacklisted() {
             document.querySelectorAll('#blacklisted_checkboxes input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = true;
@@ -635,6 +689,7 @@
             });
         }
         
+        // Bulk selection functions for raw sans
         function selectAllRaw() {
             document.querySelectorAll('#raw_checkboxes input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = true;
@@ -653,6 +708,7 @@
             });
         }
         
+        // Save unobtainable sans settings from modal
         function saveUnobtainableSettings() {
             const newUnobtainableSans = new Set();
             document.querySelectorAll('#unobtainable_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
@@ -667,6 +723,7 @@
             alert(`Unobtainable sans settings saved! ${unobtainableSans.size} sans will be excluded.`);
         }
         
+        // Save blacklisted sans settings from modal
         function saveBlacklistedSettings() {
             const newBlacklistedSans = new Set();
             document.querySelectorAll('#blacklisted_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
@@ -681,6 +738,7 @@
             alert(`Blacklist settings saved! ${blacklistedSans.size} sans will be hidden from results.`);
         }
         
+        // Save raw sans settings from modal
         function saveRawSettings() {
             const newRawSans = new Set();
             document.querySelectorAll('#raw_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
@@ -695,6 +753,7 @@
             alert(`Raw sans settings saved! ${rawSans.size} sans marked as RAW.`);
         }
         
+        // Modal control functions
         function openModal(modalId) {
             document.getElementById(modalId).style.display = 'block';
         }
@@ -710,7 +769,7 @@
             }
         }
 
-        // Search functionality
+        // Search functionality for sans selection
         document.getElementById('sans_search').addEventListener('input', async function(e) {
             const query = e.target.value;
             const resultsContainer = document.getElementById('search_results');
@@ -742,6 +801,7 @@
             }
         });
         
+        // Display search results in dropdown
         function displaySearchResults(results) {
             const container = document.getElementById('search_results');
             container.innerHTML = '';
@@ -757,6 +817,7 @@
             container.style.display = 'block';
         }
         
+        // Select a sans from search results
         function selectSans(sansName) {
             if (!selectedSans.has(sansName)) {
                 selectedSans.add(sansName);
@@ -767,11 +828,13 @@
             document.getElementById('search_results').style.display = 'none';
         }
         
+        // Remove a sans from selected list
         function removeSans(sansName) {
             selectedSans.delete(sansName);
             updateSelectedSansDisplay();
         }
         
+        // Update the display of selected sans
         function updateSelectedSansDisplay() {
             const container = document.getElementById('selected_sans');
             container.innerHTML = '';
@@ -803,15 +866,32 @@
             resultsContent.innerHTML = '';
             
             try {
+                // Validate and parse custom sans
                 const customSansText = document.getElementById('custom_sans').value;
                 let customSans = {};
                 if (customSansText.trim()) {
-                    customSans = JSON.parse(customSansText);
+                    try {
+                        customSans = JSON.parse(customSansText);
+                    } catch (e) {
+                        throw new Error(`Invalid custom sans JSON: ${e.message}`);
+                    }
                 }
                 
+                // Validate numeric inputs
+                const serverLuck = parseInt(document.getElementById('server_luck').value);
+                const timeSeconds = parseFloat(document.getElementById('time_seconds').value);
+                
+                if (isNaN(serverLuck) || serverLuck < 1) {
+                    throw new Error('Server Luck must be a number greater than 0');
+                }
+                if (isNaN(timeSeconds) || timeSeconds <= 0) {
+                    throw new Error('Time Period must be a positive number');
+                }
+                
+                // Prepare request data
                 const requestData = {
-                    server_luck: parseInt(document.getElementById('server_luck').value),
-                    time_seconds: parseFloat(document.getElementById('time_seconds').value),
+                    server_luck: serverLuck,
+                    time_seconds: timeSeconds,
                     custom_sans: customSans,
                     custom_raw: Array.from(rawSans),
                     custom_unobtainable: Array.from(unobtainableSans),
@@ -819,31 +899,76 @@
                     selected_sans: Array.from(selectedSans)
                 };
                 
+                console.log('Sending request:', requestData);
+                
+                // Make API request with proper error handling
                 const response = await fetch('/calculate', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify(requestData)
                 });
                 
+                // Check if response is OK
+                if (!response.ok) {
+                    let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+                    
+                    // Try to get error details from response
+                    try {
+                        const errorText = await response.text();
+                        if (errorText) {
+                            // If it's HTML, extract text content
+                            if (errorText.includes('<html') || errorText.includes('<!DOCTYPE')) {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = errorText;
+                                const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                                errorMessage += ` - ${textContent.substring(0, 200)}...`;
+                            } else {
+                                errorMessage += ` - ${errorText.substring(0, 200)}`;
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore errors in reading response body
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+                // Parse JSON response
                 const data = await response.json();
+                console.log('Received response:', data);
                 
                 if (data.success) {
                     displayResults(data.results);
                 } else {
-                    resultsContent.innerHTML = `<div style="color: #dc3545; padding: 20px; text-align: center;">Error: ${data.error}</div>`;
+                    throw new Error(data.error || 'Unknown server error');
                 }
+                
             } catch (error) {
-                resultsContent.innerHTML = `<div style="color: #dc3545; padding: 20px; text-align: center;">Request failed: ${error}</div>`;
+                console.error('Calculation error:', error);
+                resultsContent.innerHTML = `
+                    <div style="color: #dc3545; padding: 20px; text-align: center;">
+                        <h4>Calculation Failed</h4>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                            Please check your inputs and try again.<br>
+                            If the problem persists, check the browser console for details.
+                        </p>
+                    </div>
+                `;
             } finally {
                 loading.style.display = 'none';
             }
         }
         
+        // Display calculation results
         function displayResults(results) {
             const content = document.getElementById('results-content');
             let html = '';
             
-            // Basic stats
+            // Basic statistics grid
             html += `<div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value">${results.total_sans}</div>
@@ -858,11 +983,11 @@
                     <div class="stat-label">Time Period</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${results.total_rolls.toLocaleString()}</div>
+                    <div class="stat-value">${Math.round(results.total_rolls).toLocaleString()}</div>
                     <div class="stat-label">Total Rolls</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${results.total_sans_spawned.toLocaleString()}</div>
+                    <div class="stat-value">${Math.round(results.total_sans_spawned).toLocaleString()}</div>
                     <div class="stat-label">Total Sans Spawned</div>
                 </div>
                 <div class="stat-card">
@@ -871,7 +996,7 @@
                 </div>
             </div>`;
             
-            // Selected sans results
+            // Selected sans detailed analysis
             if (Object.keys(results.selected_results).length > 0) {
                 html += `<div class="result-card">
                     <h3>Selected Sans Analysis</h3>`;
@@ -968,6 +1093,7 @@
             content.innerHTML = html;
         }
         
+        // Helper function to format time in human-readable format
         function formatTime(seconds) {
             if (seconds === Infinity) return '∞';
             if (seconds < 60) return `${seconds.toFixed(1)}s`;
@@ -977,4 +1103,4 @@
         }
     </script>
 </body>
-</html><
+</html>
