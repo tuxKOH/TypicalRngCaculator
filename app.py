@@ -38,13 +38,13 @@ DEFAULT_SANS_DATA = {
     "lulzsec": 777777, "containment": 800000, "negative error404": 1404040, "omnithorn": 2222220,
     "DDD (dustdustdust)": 2666666, "final dust": 2999999, "butterfly404": 4040404, "error666": 6666666,
     "overkill": 16000000, "loading": 2222222, "code rainbow": 2222222, "distortion": 3666666,
-    "entity0": 11111111, "anti god": 6000000, "CTI (corrupted true insanity)": 66666666,
+    "entity0": 11111111, "anti god": 6000000, "CTI (corrupted true insanity)": 15000000,
     "roland": 15000000
 }
 
 # Default configuration lists
-DEFAULT_UNOBTAINABLE_SANS = ["CTI (corrupted true insanity)", "clown", "undersanity", "roland"]
-DEFAULT_RAW_SANS = ["CTI (corrupted true insanity)", "error666", "negative error404", "anti god"]
+DEFAULT_UNOBTAINABLE_SANS = ["CTI (corrupted true insanity)", "clown", "undersanity", "roland", "anti god"]
+DEFAULT_RAW_SANS = ["CTI (corrupted true insanity)", "negative error404", "anti god"]
 DEFAULT_BLACKLISTED_SANS = []  # New blacklist, only hides display
 
 def search_sans(query: str, sans_list: List[str]) -> List[Tuple[str, float]]:
