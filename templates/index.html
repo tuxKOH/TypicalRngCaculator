@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="google-site-verification" content="KiK7XIVWG3U7nQB-1KQ46yyWdxAFbzTE8OsJ1bFT-h4" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Typical RNG Calculator</title>
@@ -102,14 +101,6 @@
         .raw-badge { 
             background: #dc3545; 
             color: white; 
-            padding: 3px 8px; 
-            border-radius: 4px; 
-            font-size: 0.75em; 
-            margin-left: 8px;
-        }
-        .limited-badge { 
-            background: #ffc107; 
-            color: #856404; 
             padding: 3px 8px; 
             border-radius: 4px; 
             font-size: 0.75em; 
@@ -229,13 +220,12 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 10px;
-            max-height: 400px;
+            max-height: 60vh;
             overflow-y: auto;
             margin: 15px 0;
             padding: 10px;
             border: 1px solid #e1e5e9;
             border-radius: 6px;
-            
         }
         .checkbox-item {
             display: flex;
@@ -289,10 +279,10 @@
             
             <div class="form-group">
                 <label>
-                    Unobtainable (Limited) Sans Settings
-                    <span class="help-icon" onclick="openModal('limitedModal')">?</span>
+                    !Blacklisted Sans(include unob)
+                    <span class="help-icon" onclick="openModal('blacklistHelpModal')">?</span>
                 </label>
-                <button type="button" onclick="openModal('limitedModal')" class="btn-full">Configure Unobtainable Sans</button>
+                <button type="button" onclick="openModal('blacklistedModal')" class="btn-full">Configure !Blacklisted Sans</button>
             </div>
             
             <div class="form-group">
@@ -332,8 +322,7 @@
             <div id="results-content"></div>
         </div>
     </div>
-
-    <!-- Footer -->
+        <!-- Footer -->
     <div class="footer">
         <p>Created by <strong>@tux_koh</strong></p>
         <p>
@@ -345,30 +334,30 @@
         </p>
     </div>
 
-    <!-- Limited Sans Modal -->
-    <div id="limitedModal" class="modal">
+    <!-- Blacklisted Sans Modal -->
+    <div id="blacklistedModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Unobtainable (Limited) Sans Configuration</h3>
-                <span class="close" onclick="closeModal('limitedModal')">&times;</span>
+                <h3>!Blacklisted Sans Configuration</h3>
+                <span class="close" onclick="closeModal('blacklistedModal')">&times;</span>
             </div>
-            <p>Select which limited sans should be included in the calculation:</p>
+            <p>Select which sans should be blacklisted (will not spawn):</p>
             
             <div class="controls-row">
-                <button type="button" onclick="selectAllLimited()" class="btn-small">Select All</button>
-                <button type="button" onclick="deselectAllLimited()" class="btn-small">Deselect All</button>
-                <button type="button" onclick="invertLimitedSelection()" class="btn-small">Invert Selection</button>
+                <button type="button" onclick="selectAllBlacklisted()" class="btn-small">Select All</button>
+                <button type="button" onclick="deselectAllBlacklisted()" class="btn-small">Deselect All</button>
+                <button type="button" onclick="invertBlacklistedSelection()" class="btn-small">Invert Selection</button>
             </div>
             
             <div class="search-container">
-                <input type="text" id="limited_search" placeholder="Search limited sans..." oninput="filterLimitedSans()">
+                <input type="text" id="blacklisted_search" placeholder="Search sans..." oninput="filterBlacklistedSans()">
             </div>
             
-            <div class="checkbox-grid" id="limited_checkboxes">
+            <div class="checkbox-grid" id="blacklisted_checkboxes">
                 <!-- Will be populated by JavaScript -->
             </div>
             
-            <button type="button" onclick="saveLimitedSettings()" class="btn-full">Save Settings</button>
+            <button type="button" onclick="saveBlacklistedSettings()" class="btn-full">Save Settings</button>
         </div>
     </div>
 
@@ -399,6 +388,18 @@
         </div>
     </div>
 
+    <!-- Blacklist Help Modal -->
+    <div id="blacklistHelpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Why is !blacklist sans include in unob</h3>
+                <span class="close" onclick="closeModal('blacklistHelpModal')">&times;</span>
+            </div>
+            <p>as the source code of spawnning i get from TR coder, unob is just auto blacklisted, and blacklisted is a Boolean value to be chosen from list, so ye they r basically same</p>
+            <button type="button" onclick="closeModal('blacklistHelpModal')" class="btn-full">Close</button>
+        </div>
+    </div>
+
     <!-- Custom Help Modal -->
     <div id="customHelpModal" class="modal">
         <div class="modal-content">
@@ -424,8 +425,7 @@
             <button type="button" onclick="closeModal('customHelpModal')" class="btn-full">Close</button>
         </div>
     </div>
-
-    <script>
+        <script>
         // Default sans data
         const DEFAULT_SANS_DATA = {
             "Little": 2, "classic": 3, "Fell": 5, "outer": 8, "horror": 25,
@@ -446,31 +446,28 @@
         };
 
         let selectedSans = new Set();
-        let limitedSans = new Set(['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland']);
+        let blacklistedSans = new Set(['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland']);
         let rawSans = new Set(['CTI (corrupted true insanity)', 'error666', 'negative error404', 'anti god']);
         const allSans = Object.keys(DEFAULT_SANS_DATA);
-        const defaultLimited = ['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland'];
         
         // Initialize modals when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("DEBUG: Page loaded, initializing modals");
-            initializeLimitedModal();
+            initializeBlacklistedModal();
             initializeRawModal();
-            console.log("DEBUG: Initial rawSans:", Array.from(rawSans));
         });
         
-        function initializeLimitedModal() {
-            const container = document.getElementById('limited_checkboxes');
+        function initializeBlacklistedModal() {
+            const container = document.getElementById('blacklisted_checkboxes');
             if (!container) return;
             
             container.innerHTML = '';
             
-            defaultLimited.forEach(sans => {
+            allSans.forEach(sans => {
                 const div = document.createElement('div');
                 div.className = 'checkbox-item';
-                const safeId = 'limited_' + sans.replace(/[^a-zA-Z0-9]/g, '_');
+                const safeId = 'blacklisted_' + sans.replace(/[^a-zA-Z0-9]/g, '_');
                 div.innerHTML = `
-                    <input type="checkbox" id="${safeId}" ${limitedSans.has(sans) ? 'checked' : ''}>
+                    <input type="checkbox" id="${safeId}" ${blacklistedSans.has(sans) ? 'checked' : ''}>
                     <label for="${safeId}">${sans}</label>
                 `;
                 container.appendChild(div);
@@ -495,9 +492,9 @@
             });
         }
         
-        function filterLimitedSans() {
-            const query = document.getElementById('limited_search').value.toLowerCase();
-            const items = document.querySelectorAll('#limited_checkboxes .checkbox-item');
+        function filterBlacklistedSans() {
+            const query = document.getElementById('blacklisted_search').value.toLowerCase();
+            const items = document.querySelectorAll('#blacklisted_checkboxes .checkbox-item');
             
             items.forEach(item => {
                 const label = item.querySelector('label').textContent.toLowerCase();
@@ -515,20 +512,20 @@
             });
         }
         
-        function selectAllLimited() {
-            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]').forEach(checkbox => {
+        function selectAllBlacklisted() {
+            document.querySelectorAll('#blacklisted_checkboxes input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = true;
             });
         }
         
-        function deselectAllLimited() {
-            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]').forEach(checkbox => {
+        function deselectAllBlacklisted() {
+            document.querySelectorAll('#blacklisted_checkboxes input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
             });
         }
         
-        function invertLimitedSelection() {
-            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]').forEach(checkbox => {
+        function invertBlacklistedSelection() {
+            document.querySelectorAll('#blacklisted_checkboxes input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = !checkbox.checked;
             });
         }
@@ -551,18 +548,18 @@
             });
         }
         
-        function saveLimitedSettings() {
-            const newLimitedSans = new Set();
-            document.querySelectorAll('#limited_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
+        function saveBlacklistedSettings() {
+            const newBlacklistedSans = new Set();
+            document.querySelectorAll('#blacklisted_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
                 const label = checkbox.nextElementSibling.textContent;
-                newLimitedSans.add(label);
+                newBlacklistedSans.add(label);
             });
             
-            limitedSans = newLimitedSans;
-            console.log("DEBUG: Updated limitedSans:", Array.from(limitedSans));
+            blacklistedSans = newBlacklistedSans;
+            console.log("DEBUG: Updated blacklistedSans:", Array.from(blacklistedSans));
             
-            closeModal('limitedModal');
-            alert(`Limited sans settings saved! ${limitedSans.size} sans will be included.`);
+            closeModal('blacklistedModal');
+            alert(`Blacklisted sans settings saved! ${blacklistedSans.size} sans will be excluded.`);
         }
         
         function saveRawSettings() {
@@ -688,25 +685,14 @@
                     customSans = JSON.parse(customSansText);
                 }
                 
-                // Debug: log what we're sending
-                console.log("=== DEBUG FRONTEND REQUEST ===");
-                console.log("Sending rawSans:", Array.from(rawSans));
-                console.log("Sending limitedSans:", Array.from(limitedSans));
-                console.log("Sending selectedSans:", Array.from(selectedSans));
-                console.log("Server luck:", document.getElementById('server_luck').value);
-                console.log("Time seconds:", document.getElementById('time_seconds').value);
-                
                 const requestData = {
                     server_luck: parseInt(document.getElementById('server_luck').value),
                     time_seconds: parseFloat(document.getElementById('time_seconds').value),
-                    include_limited: Array.from(limitedSans),
                     custom_sans: customSans,
                     custom_raw: Array.from(rawSans),
+                    custom_blacklisted: Array.from(blacklistedSans),
                     selected_sans: Array.from(selectedSans)
                 };
-                
-                console.log("Full request data:", requestData);
-                console.log("=== DEBUG FRONTEND REQUEST END ===");
                 
                 const response = await fetch('/calculate', {
                     method: 'POST',
@@ -848,3 +834,4 @@
     </script>
 </body>
 </html>
+            
