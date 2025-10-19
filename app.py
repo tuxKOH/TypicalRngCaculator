@@ -23,7 +23,7 @@ from typing import Dict, List, Tuple
 
 app = Flask(__name__)
 
-# 修復名稱一致性：DD -> DD (dustdust), dustdustdust -> DDD (dustdustdust)
+# Default sans data with fixed name consistency
 DEFAULT_SANS_DATA = {
     "Little": 2, "classic": 3, "Fell": 5, "outer": 8, "horror": 25,
     "Fresh": 32, "After": 44, "Killer": 66, "Dream": 77, "RuinsDust": 12,
@@ -42,11 +42,13 @@ DEFAULT_SANS_DATA = {
     "roland": 15000000
 }
 
+# Default configuration lists
 DEFAULT_UNOBTAINABLE_SANS = ["CTI (corrupted true insanity)", "clown", "undersanity", "roland"]
 DEFAULT_RAW_SANS = ["CTI (corrupted true insanity)", "error666", "negative error404", "anti god"]
-DEFAULT_BLACKLISTED_SANS = []  # 新的 blacklist，只隱藏顯示
+DEFAULT_BLACKLISTED_SANS = []  # New blacklist, only hides display
 
 def search_sans(query: str, sans_list: List[str]) -> List[Tuple[str, float]]:
+    """Search sans function with fuzzy matching"""
     if not query:
         return [(sans, 0) for sans in sans_list[:10]]
     
@@ -56,41 +58,48 @@ def search_sans(query: str, sans_list: List[str]) -> List[Tuple[str, float]]:
     for sans in sans_list:
         sans_lower = sans.lower()
         
+        # Calculate match score based on different criteria
         if sans_lower == query:
-            score = 1.0
+            score = 1.0  # Exact match
         elif sans_lower.startswith(query):
-            score = 0.8
+            score = 0.8  # Starts with query
         elif re.search(r'\b' + re.escape(query) + r'\b', sans_lower):
-            score = 0.6
+            score = 0.6  # Word boundary match
         elif query in sans_lower:
-            score = 0.4
+            score = 0.4  # Contains query
         else:
+            # Fuzzy match with character sequence
             pattern = '.*'.join(query)
             if re.search(pattern, sans_lower):
-                score = 0.2
+                score = 0.2  # Fuzzy match
             else:
-                score = 0.0
+                score = 0.0  # No match
         
         if score > 0:
             results.append((sans, score))
     
+    # Sort by score (descending) and then by name
     results.sort(key=lambda x: (-x[1], x[0]))
-    return results[:15]
+    return results[:15]  # Return top 15 results
 
 class SansCalculator:
+    """Main calculator class for probability calculations"""
+    
     def __init__(self):
         self.sans_list = []
+        self.server_luck = 1
     
     def setup(self, sans_data: Dict, raw_sans: List[str], unobtainable_sans: List[str], server_luck: int):
+        """Setup calculator with sans data and configuration"""
         self.sans_list = []
         self.server_luck = server_luck
         raw_set = set(raw_sans)
         unobtainable_set = set(unobtainable_sans)
         
-        # 根據遊戲源代碼邏輯：先過濾掉 unobtainable sans
+        # Filter out unobtainable sans and prepare sans list
         for name, chance in sans_data.items():
             if name in unobtainable_set:
-                continue  # 直接跳過，不加入候選列表
+                continue  # Skip unobtainable sans
                 
             is_raw = name in raw_set
             self.sans_list.append({
@@ -100,34 +109,35 @@ class SansCalculator:
             })
     
     def calculate_probabilities(self):
+        """Calculate normalized probabilities for all sans"""
         if not self.sans_list:
             return {}, 0.0
         
-        # 模擬遊戲選擇邏輯
         final_probs = {}
         
+        # Calculate individual success probabilities
         for sans in self.sans_list:
             chance = sans["chance"]
             
-            # 如果不是 RAW sans，則受 server luck 影響
+            # Apply server luck to non-RAW sans
             if not sans["is_raw"]:
                 chance = chance / self.server_luck
             
-            # 確保 chance 不小於 1
+            # Ensure chance is at least 1
             chance = max(1, chance)
             success_prob = 1.0 / chance
             final_probs[sans["name"]] = success_prob
         
-        # 正規化概率（因為遊戲會從所有候選中選擇一個）
+        # Normalize probabilities so they sum to 1
         total = sum(final_probs.values())
         if total > 0:
             for name in final_probs:
                 final_probs[name] /= total
         
-        # 計算總權重（用於期望值計算）
+        # Calculate total weight for expected value calculations
         total_weight = sum(1.0 / sans["chance"] if sans["is_raw"] else self.server_luck / sans["chance"] for sans in self.sans_list)
         
-        # 構建詳細概率信息
+        # Build detailed probability information
         probabilities = {}
         for sans in self.sans_list:
             final_prob = final_probs[sans["name"]]
@@ -144,8 +154,9 @@ class SansCalculator:
         return probabilities, total_weight
     
     def expected_per_event(self, target_sans=None):
+        """Calculate expected number of sans per summon event"""
         probs, _ = self.calculate_probabilities()
-        avg_sans_per_event = 16
+        avg_sans_per_event = 16  # Average sans spawned per summon
         
         if target_sans:
             return avg_sans_per_event * probs[target_sans]["probability"]
@@ -153,21 +164,25 @@ class SansCalculator:
             return {name: avg_sans_per_event * data["probability"] for name, data in probs.items()}
     
     def probability_in_time(self, target_sans: str, time_seconds: float):
+        """Calculate probability of getting at least one target sans in specified time"""
         probs, _ = self.calculate_probabilities()
         if target_sans not in probs:
             return 0.0, 0.0
             
-        # 修正召喚時間：2s + 0.04 * 16 = 2.64s
+        # Fixed summon time: 2s + 0.04 * 16 = 2.64s
         time_per_roll = 2.64
         events_per_second = 1.0 / time_per_roll
         total_events = events_per_second * time_seconds
         expected_per_event = self.expected_per_event(target_sans)
         lambda_total = expected_per_event * total_events
+        
+        # Poisson distribution for probability of at least one success
         prob_at_least_one = 1 - math.exp(-lambda_total)
         
         return prob_at_least_one, lambda_total
     
     def time_for_expected_first(self, target_sans: str):
+        """Calculate expected time to get first target sans"""
         expected_per_event = self.expected_per_event(target_sans)
         time_per_roll = 2.64
         events_per_second = 1.0 / time_per_roll
@@ -178,6 +193,7 @@ class SansCalculator:
         return 1 / (expected_per_event * events_per_second)
     
     def time_for_certainty(self, target_sans: str, certainty: float = 0.99):
+        """Calculate time required to reach specified certainty level"""
         expected_per_event = self.expected_per_event(target_sans)
         time_per_roll = 2.64
         events_per_second = 1.0 / time_per_roll
@@ -189,6 +205,7 @@ class SansCalculator:
         return -math.log(1 - certainty) / lambda_rate
     
     def probability_all_in_time(self, time_seconds: float):
+        """Calculate probabilities for all sans in specified time period"""
         probs, _ = self.calculate_probabilities()
         result = {}
         
@@ -210,12 +227,17 @@ class SansCalculator:
 
 @app.route('/')
 def index():
-    return render_template('try.html')
+    """Home page route - serves the main calculator interface"""
+    return render_template('index.html')
 
 @app.route('/search', methods=['POST'])
 def search():
+    """Search endpoint for finding sans by name"""
     try:
-        data = request.json
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data provided'})
+            
         query = data.get('query', '')
         
         all_sans = list(DEFAULT_SANS_DATA.keys())
@@ -231,8 +253,13 @@ def search():
 
 @app.route('/calculate', methods=['POST'])
 def calculate():
+    """Main calculation endpoint - processes calculator requests"""
     try:
-        data = request.json
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data provided'})
+        
+        # Extract and validate input parameters
         server_luck = int(data.get('server_luck', 8))
         time_seconds = float(data.get('time_seconds', 3600))
         custom_sans = data.get('custom_sans', {})
@@ -241,50 +268,48 @@ def calculate():
         custom_unobtainable = data.get('custom_unobtainable', [])
         custom_blacklisted = data.get('custom_blacklisted', [])
         
+        # Combine default sans data with custom sans
         sans_data = DEFAULT_SANS_DATA.copy()
-        sans_data.update(custom_sans)
+        if isinstance(custom_sans, dict):
+            sans_data.update(custom_sans)
         
+        # Ensure all list inputs are properly formatted
         if not isinstance(custom_raw, list):
-            if isinstance(custom_raw, str):
-                custom_raw = [s.strip() for s in custom_raw.split(',')] if custom_raw else []
-            else:
-                custom_raw = []
-        
+            custom_raw = []
         if not isinstance(custom_unobtainable, list):
-            if isinstance(custom_unobtainable, str):
-                custom_unobtainable = [s.strip() for s in custom_unobtainable.split(',')] if custom_unobtainable else []
-            else:
-                custom_unobtainable = []
-        
+            custom_unobtainable = []
         if not isinstance(custom_blacklisted, list):
-            if isinstance(custom_blacklisted, str):
-                custom_blacklisted = [s.strip() for s in custom_blacklisted.split(',')] if custom_blacklisted else []
-            else:
-                custom_blacklisted = []
+            custom_blacklisted = []
+        if not isinstance(selected_sans, list):
+            selected_sans = []
         
-        raw_sans = list(custom_raw)
-        unobtainable_sans = list(custom_unobtainable)
-        blacklisted_sans = list(custom_blacklisted)
+        # Combine default and custom configurations
+        raw_sans = DEFAULT_RAW_SANS + custom_raw
+        unobtainable_sans = DEFAULT_UNOBTAINABLE_SANS + custom_unobtainable
+        blacklisted_sans = DEFAULT_BLACKLISTED_SANS + custom_blacklisted
         
+        # Initialize calculator and perform calculations
         calculator = SansCalculator()
         calculator.setup(sans_data, raw_sans, unobtainable_sans, server_luck)
         
         probs, total_weight = calculator.calculate_probabilities()
         all_probabilities = calculator.probability_all_in_time(time_seconds)
         
-        # 計算統計信息
+        # Calculate statistics
         time_per_roll = 2.64  # 2s + 0.04 * 16
         events_per_second = 1.0 / time_per_roll
         total_rolls = events_per_second * time_seconds
-        total_sans_spawned = total_rolls * 16
+        total_sans_spawned = total_rolls * 16  # 16 sans per summon
         
-        # 過濾掉 blacklisted sans 的排名
+        # Filter out blacklisted sans from rankings
         filtered_by_prob = [(name, data) for name, data in all_probabilities.items() if name not in blacklisted_sans]
         filtered_by_rarity = [(name, data) for name, data in all_probabilities.items() if name not in blacklisted_sans]
         
+        # Sort rankings
         sorted_by_prob = sorted(filtered_by_prob, key=lambda x: x[1]['probability_percent'], reverse=True)[:20]
         sorted_by_rarity = sorted(filtered_by_rarity, key=lambda x: x[1]['base_probability'])[:20]
         
+        # Prepare detailed results for selected sans
         selected_results = {}
         for sans_name in selected_sans:
             if sans_name in probs:
@@ -301,6 +326,7 @@ def calculate():
                     'is_raw': probs[sans_name]['is_raw']
                 }
         
+        # Compile final results
         results = {
             'total_sans': len(probs),
             'total_weight': total_weight,
@@ -319,190 +345,20 @@ def calculate():
         return jsonify({'success': True, 'results': results})
     
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Calculation error: {error_details}")  # Log error for debugging
         return jsonify({'success': False, 'error': str(e)})
 
-if __name__ == '__main__':
-    app.run(debug=True)            
-            if not sans["is_raw"]:
-                chance = chance / self.server_luck
-            
-            chance = max(1, chance)
-            success_prob = 1.0 / chance
-            final_probs[sans["name"]] = success_prob
-        
-        total = sum(final_probs.values())
-        if total > 0:
-            for name in final_probs:
-                final_probs[name] /= total
-        
-        total_weight = sum(1.0 / sans["chance"] if sans["is_raw"] else self.server_luck / sans["chance"] for sans in self.sans_list)
-        
-        probabilities = {}
-        for sans in self.sans_list:
-            final_prob = final_probs[sans["name"]]
-            individual_prob = 1.0 / sans["chance"] if sans["is_raw"] else self.server_luck / sans["chance"]
-            probabilities[sans["name"]] = {
-                "probability": final_prob,
-                "percentage": final_prob * 100,
-                "individual_probability": individual_prob,
-                "individual_percentage": individual_prob * 100,
-                "is_raw": sans["is_raw"],
-                "chance": sans["chance"]
-            }
-        
-        return probabilities, total_weight
-    
-    def expected_per_event(self, target_sans=None):
-        probs, _ = self.calculate_probabilities()
-        avg_sans_per_event = 16
-        
-        if target_sans:
-            return avg_sans_per_event * probs[target_sans]["probability"]
-        else:
-            return {name: avg_sans_per_event * data["probability"] for name, data in probs.items()}
-    
-    def probability_in_time(self, target_sans: str, time_seconds: float):
-        probs, _ = self.calculate_probabilities()
-        if target_sans not in probs:
-            return 0.0, 0.0
-            
-        events_per_second = 0.5
-        total_events = events_per_second * time_seconds
-        expected_per_event = self.expected_per_event(target_sans)
-        lambda_total = expected_per_event * total_events
-        prob_at_least_one = 1 - math.exp(-lambda_total)
-        
-        return prob_at_least_one, lambda_total
-    
-    def time_for_expected_first(self, target_sans: str):
-        expected_per_event = self.expected_per_event(target_sans)
-        events_per_second = 0.5
-        
-        if expected_per_event <= 0:
-            return float('inf')
-        
-        return 1 / (expected_per_event * events_per_second)
-    
-    def time_for_certainty(self, target_sans: str, certainty: float = 0.99):
-        expected_per_event = self.expected_per_event(target_sans)
-        events_per_second = 0.5
-        
-        if expected_per_event <= 0:
-            return float('inf')
-        
-        lambda_rate = expected_per_event * events_per_second
-        return -math.log(1 - certainty) / lambda_rate
-    
-    def probability_all_in_time(self, time_seconds: float):
-        probs, _ = self.calculate_probabilities()
-        result = {}
-        
-        for name in probs.keys():
-            prob, expected = self.probability_in_time(name, time_seconds)
-            time_first = self.time_for_expected_first(name)
-            time_99 = self.time_for_certainty(name)
-            result[name] = {
-                "probability_percent": prob * 100,
-                "expected_count": expected,
-                "time_first_seconds": time_first,
-                "time_99_percent_seconds": time_99,
-                "base_probability": probs[name]["percentage"],
-                "individual_probability": probs[name]["individual_percentage"],
-                "is_raw": probs[name]["is_raw"]
-            }
-        
-        return result
+@app.errorhandler(404)
+def not_found(error):
+    """404 error handler - returns JSON response"""
+    return jsonify({'success': False, 'error': 'Endpoint not found'}), 404
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/search', methods=['POST'])
-def search():
-    try:
-        data = request.json
-        query = data.get('query', '')
-        
-        all_sans = list(DEFAULT_SANS_DATA.keys())
-        results = search_sans(query, all_sans)
-        
-        return jsonify({
-            'success': True, 
-            'results': [{'name': name, 'score': score} for name, score in results]
-        })
-    
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/calculate', methods=['POST'])
-def calculate():
-    try:
-        data = request.json
-        server_luck = int(data.get('server_luck', 8))
-        time_seconds = float(data.get('time_seconds', 3600))
-        custom_sans = data.get('custom_sans', {})
-        selected_sans = data.get('selected_sans', [])
-        custom_raw = data.get('custom_raw', [])
-        custom_blacklisted = data.get('custom_blacklisted', [])
-        
-        sans_data = DEFAULT_SANS_DATA.copy()
-        sans_data.update(custom_sans)
-        
-        if not isinstance(custom_raw, list):
-            if isinstance(custom_raw, str):
-                custom_raw = [s.strip() for s in custom_raw.split(',')] if custom_raw else []
-            else:
-                custom_raw = []
-        
-        if not isinstance(custom_blacklisted, list):
-            if isinstance(custom_blacklisted, str):
-                custom_blacklisted = [s.strip() for s in custom_blacklisted.split(',')] if custom_blacklisted else []
-            else:
-                custom_blacklisted = []
-        
-        raw_sans = list(custom_raw)
-        blacklisted_sans = list(custom_blacklisted)
-        
-        calculator = SansCalculator()
-        calculator.setup(sans_data, raw_sans, blacklisted_sans, server_luck)
-        
-        probs, total_weight = calculator.calculate_probabilities()
-        all_probabilities = calculator.probability_all_in_time(time_seconds)
-        
-        sorted_by_prob = sorted(all_probabilities.items(), key=lambda x: x[1]['probability_percent'], reverse=True)
-        sorted_by_rarity = sorted(all_probabilities.items(), key=lambda x: x[1]['base_probability'])
-        
-        selected_results = {}
-        for sans_name in selected_sans:
-            if sans_name in probs:
-                prob, expected = calculator.probability_in_time(sans_name, time_seconds)
-                time_first = calculator.time_for_expected_first(sans_name)
-                time_99 = calculator.time_for_certainty(sans_name)
-                selected_results[sans_name] = {
-                    'probability_percent': prob * 100,
-                    'expected_count': expected,
-                    'time_first': time_first,
-                    'time_99_percent': time_99,
-                    'base_probability': probs[sans_name]["percentage"],
-                    'individual_probability': probs[sans_name]["individual_percentage"],
-                    'is_raw': probs[sans_name]['is_raw']
-                }
-        
-        results = {
-            'total_sans': len(probs),
-            'total_weight': total_weight,
-            'server_luck': server_luck,
-            'time_seconds': time_seconds,
-            'all_probabilities': all_probabilities,
-            'sorted_by_prob': sorted_by_prob[:20],
-            'sorted_by_rarity': sorted_by_rarity[:20],
-            'selected_results': selected_results
-        }
-        
-        return jsonify({'success': True, 'results': results})
-    
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+@app.errorhandler(500)
+def internal_error(error):
+    """500 error handler - returns JSON response"""
+    return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
