@@ -257,6 +257,14 @@
         h2 { color: #34495e; margin: 25px 0 15px 0; }
         h3 { color: #2c3e50; margin: 20px 0 12px 0; }
         h4 { color: #495057; margin: 15px 0 10px 0; }
+        .blacklisted-badge {
+            background: #6c757d;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -279,10 +287,18 @@
             
             <div class="form-group">
                 <label>
-                    !Blacklisted Sans(include unob)
+                    Unobtainable Sans List
+                    <span class="help-icon" onclick="openModal('unobtainableHelpModal')">?</span>
+                </label>
+                <button type="button" onclick="openModal('unobtainableModal')" class="btn-full">Configure Unobtainable Sans</button>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    Blacklist Sans (Hide from results)
                     <span class="help-icon" onclick="openModal('blacklistHelpModal')">?</span>
                 </label>
-                <button type="button" onclick="openModal('blacklistedModal')" class="btn-full">Configure !Blacklisted Sans</button>
+                <button type="button" onclick="openModal('blacklistedModal')" class="btn-full">Configure Blacklist</button>
             </div>
             
             <div class="form-group">
@@ -334,14 +350,41 @@
         </p>
     </div>
 
+    <!-- Unobtainable Sans Modal -->
+    <div id="unobtainableModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Unobtainable Sans Configuration</h3>
+                <span class="close" onclick="closeModal('unobtainableModal')">&times;</span>
+            </div>
+            <p>Select which sans should be unobtainable (will not spawn):</p>
+            
+            <div class="controls-row">
+                <button type="button" onclick="selectAllUnobtainable()" class="btn-small">Select All</button>
+                <button type="button" onclick="deselectAllUnobtainable()" class="btn-small">Deselect All</button>
+                <button type="button" onclick="invertUnobtainableSelection()" class="btn-small">Invert Selection</button>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" id="unobtainable_search" placeholder="Search sans..." oninput="filterUnobtainableSans()">
+            </div>
+            
+            <div class="checkbox-grid" id="unobtainable_checkboxes">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            
+            <button type="button" onclick="saveUnobtainableSettings()" class="btn-full">Save Settings</button>
+        </div>
+    </div>
+
     <!-- Blacklisted Sans Modal -->
     <div id="blacklistedModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>!Blacklisted Sans Configuration</h3>
+                <h3>Blacklist Sans Configuration</h3>
                 <span class="close" onclick="closeModal('blacklistedModal')">&times;</span>
             </div>
-            <p>Select which sans should be blacklisted (will not spawn):</p>
+            <p>Select which sans should be hidden from results (does not affect probabilities):</p>
             
             <div class="controls-row">
                 <button type="button" onclick="selectAllBlacklisted()" class="btn-small">Select All</button>
@@ -388,14 +431,28 @@
         </div>
     </div>
 
+    <!-- Unobtainable Help Modal -->
+    <div id="unobtainableHelpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Unobtainable Sans</h3>
+                <span class="close" onclick="closeModal('unobtainableHelpModal')">&times;</span>
+            </div>
+            <p>These sans are completely removed from the spawn pool and will never appear.</p>
+            <p>Default unobtainable sans: CTI (corrupted true insanity), clown, undersanity, roland</p>
+            <button type="button" onclick="closeModal('unobtainableHelpModal')" class="btn-full">Close</button>
+        </div>
+    </div>
+
     <!-- Blacklist Help Modal -->
     <div id="blacklistHelpModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Why is !blacklist sans include in unob</h3>
+                <h3>Blacklist Sans</h3>
                 <span class="close" onclick="closeModal('blacklistHelpModal')">&times;</span>
             </div>
-            <p>as the source code of spawnning i get from TR coder, unob is just auto blacklisted, and blacklisted is a Boolean value to be chosen from list, so ye they r basically same</p>
+            <p>These sans are hidden from results but still affect probabilities.</p>
+            <p>Example: If Little (1/2) is blacklisted and Classic (1/2) is not, Little will be hidden from results but the total probability remains 1/2.</p>
             <button type="button" onclick="closeModal('blacklistHelpModal')" class="btn-full">Close</button>
         </div>
     </div>
@@ -426,35 +483,55 @@
         </div>
     </div>
         <script>
-        // Default sans data
+        // Default sans data - 修復名稱一致性
         const DEFAULT_SANS_DATA = {
             "Little": 2, "classic": 3, "Fell": 5, "outer": 8, "horror": 25,
             "Fresh": 32, "After": 44, "Killer": 66, "Dream": 77, "RuinsDust": 12,
             "SnowdinDust": 20, "Photo Negative": 200, "Assured Prey": 500, "gencide": 900,
             "C!insanity": 3666, "Avenge": 3449, "Ink": 5000, "Error": 5000, "Fatal error": 55555,
-            "Reaper": 99999, "Pesti": 3500, "DD": 16666, "Lethal Deal": 50000, "Hyper-dust": 99999,
+            "Reaper": 99999, "Pesti": 3500, "DD (dustdust)": 16666, "Lethal Deal": 50000, "Hyper-dust": 99999,
             "clown": 69420, "undersanity": 500000, "Corrupted insanity": 162162, "Final insanity": 241956,
             "Superfell": 250000, "Cone": 100000, "Weakened alpha": 250000, "king mutiverse": 333333,
             "zalgo": 366666, "error404": 404040, "omnipotent": 555555, "infected": 666666,
             "fatal corruption": 666666, "virus404": 999999, "HIM (true insanity)": 1666666,
             "alpha judge": 399999, "errordust": 444444, "true dust": 500000, "Shanghaivania": 1500000,
             "lulzsec": 777777, "containment": 800000, "negative error404": 1404040, "omnithorn": 2222220,
-            "dustdustdust": 2666666, "final dust": 2999999, "butterfly404": 4040404, "error666": 6666666,
+            "DDD (dustdustdust)": 2666666, "final dust": 2999999, "butterfly404": 4040404, "error666": 6666666,
             "overkill": 16000000, "loading": 2222222, "code rainbow": 2222222, "distortion": 3666666,
             "entity0": 11111111, "anti god": 6000000, "CTI (corrupted true insanity)": 66666666,
             "roland": 15000000
         };
 
         let selectedSans = new Set();
-        let blacklistedSans = new Set(['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland']);
+        let unobtainableSans = new Set(['CTI (corrupted true insanity)', 'clown', 'undersanity', 'roland']);
+        let blacklistedSans = new Set([]); // 新的 blacklist，只隱藏顯示
         let rawSans = new Set(['CTI (corrupted true insanity)', 'error666', 'negative error404', 'anti god']);
         const allSans = Object.keys(DEFAULT_SANS_DATA);
         
         // Initialize modals when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            initializeUnobtainableModal();
             initializeBlacklistedModal();
             initializeRawModal();
         });
+        
+        function initializeUnobtainableModal() {
+            const container = document.getElementById('unobtainable_checkboxes');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            allSans.forEach(sans => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                const safeId = 'unobtainable_' + sans.replace(/[^a-zA-Z0-9]/g, '_');
+                div.innerHTML = `
+                    <input type="checkbox" id="${safeId}" ${unobtainableSans.has(sans) ? 'checked' : ''}>
+                    <label for="${safeId}">${sans}</label>
+                `;
+                container.appendChild(div);
+            });
+        }
         
         function initializeBlacklistedModal() {
             const container = document.getElementById('blacklisted_checkboxes');
@@ -492,6 +569,16 @@
             });
         }
         
+        function filterUnobtainableSans() {
+            const query = document.getElementById('unobtainable_search').value.toLowerCase();
+            const items = document.querySelectorAll('#unobtainable_checkboxes .checkbox-item');
+            
+            items.forEach(item => {
+                const label = item.querySelector('label').textContent.toLowerCase();
+                item.style.display = label.includes(query) ? 'flex' : 'none';
+            });
+        }
+        
         function filterBlacklistedSans() {
             const query = document.getElementById('blacklisted_search').value.toLowerCase();
             const items = document.querySelectorAll('#blacklisted_checkboxes .checkbox-item');
@@ -509,6 +596,24 @@
             items.forEach(item => {
                 const label = item.querySelector('label').textContent.toLowerCase();
                 item.style.display = label.includes(query) ? 'flex' : 'none';
+            });
+        }
+        
+        function selectAllUnobtainable() {
+            document.querySelectorAll('#unobtainable_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+        
+        function deselectAllUnobtainable() {
+            document.querySelectorAll('#unobtainable_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+        
+        function invertUnobtainableSelection() {
+            document.querySelectorAll('#unobtainable_checkboxes input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = !checkbox.checked;
             });
         }
         
@@ -548,6 +653,20 @@
             });
         }
         
+        function saveUnobtainableSettings() {
+            const newUnobtainableSans = new Set();
+            document.querySelectorAll('#unobtainable_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
+                const label = checkbox.nextElementSibling.textContent;
+                newUnobtainableSans.add(label);
+            });
+            
+            unobtainableSans = newUnobtainableSans;
+            console.log("DEBUG: Updated unobtainableSans:", Array.from(unobtainableSans));
+            
+            closeModal('unobtainableModal');
+            alert(`Unobtainable sans settings saved! ${unobtainableSans.size} sans will be excluded.`);
+        }
+        
         function saveBlacklistedSettings() {
             const newBlacklistedSans = new Set();
             document.querySelectorAll('#blacklisted_checkboxes input[type="checkbox"]:checked').forEach(checkbox => {
@@ -559,7 +678,7 @@
             console.log("DEBUG: Updated blacklistedSans:", Array.from(blacklistedSans));
             
             closeModal('blacklistedModal');
-            alert(`Blacklisted sans settings saved! ${blacklistedSans.size} sans will be excluded.`);
+            alert(`Blacklist settings saved! ${blacklistedSans.size} sans will be hidden from results.`);
         }
         
         function saveRawSettings() {
@@ -615,6 +734,11 @@
                 }
             } catch (error) {
                 console.error('Search failed:', error);
+                // Fallback to client-side search
+                const results = allSans.filter(sans => 
+                    sans.toLowerCase().includes(query.toLowerCase())
+                ).slice(0, 10).map(name => ({name}));
+                displaySearchResults(results);
             }
         });
         
@@ -690,6 +814,7 @@
                     time_seconds: parseFloat(document.getElementById('time_seconds').value),
                     custom_sans: customSans,
                     custom_raw: Array.from(rawSans),
+                    custom_unobtainable: Array.from(unobtainableSans),
                     custom_blacklisted: Array.from(blacklistedSans),
                     selected_sans: Array.from(selectedSans)
                 };
@@ -732,6 +857,18 @@
                     <div class="stat-value">${formatTime(results.time_seconds)}</div>
                     <div class="stat-label">Time Period</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-value">${results.total_rolls.toLocaleString()}</div>
+                    <div class="stat-label">Total Rolls</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${results.total_sans_spawned.toLocaleString()}</div>
+                    <div class="stat-label">Total Sans Spawned</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${results.time_per_roll.toFixed(2)}s</div>
+                    <div class="stat-label">Time per Roll</div>
+                </div>
             </div>`;
             
             // Selected sans results
@@ -740,9 +877,10 @@
                     <h3>Selected Sans Analysis</h3>`;
                 
                 Object.entries(results.selected_results).forEach(([name, data]) => {
+                    const isBlacklisted = results.blacklisted_sans.includes(name);
                     html += `
                     <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 6px;">
-                        <h4>${name} ${data.is_raw ? '<span class="raw-badge">RAW</span>' : ''}</h4>
+                        <h4>${name} ${data.is_raw ? '<span class="raw-badge">RAW</span>' : ''} ${isBlacklisted ? '<span class="blacklisted-badge">BLACKLISTED</span>' : ''}</h4>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 10px;">
                             <div>
                                 <strong>Individual Probability:</strong><br>
@@ -781,6 +919,9 @@
                 <div class="sans-list">`;
             
             results.sorted_by_prob.forEach(([name, data], index) => {
+                const isBlacklisted = results.blacklisted_sans.includes(name);
+                if (isBlacklisted) return; // Skip blacklisted sans
+                
                 html += `<div class="sans-item">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                         <strong>${index + 1}. ${name}</strong>
@@ -805,6 +946,9 @@
                 <div class="sans-list">`;
             
             results.sorted_by_rarity.forEach(([name, data], index) => {
+                const isBlacklisted = results.blacklisted_sans.includes(name);
+                if (isBlacklisted) return; // Skip blacklisted sans
+                
                 html += `<div class="sans-item">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                         <strong>${index + 1}. ${name}</strong>
@@ -833,5 +977,4 @@
         }
     </script>
 </body>
-</html>
-            
+</html><
