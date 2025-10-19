@@ -218,6 +218,8 @@
             max-width: 700px;
             max-height: 90vh;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
         .modal-header {
             display: flex;
@@ -235,6 +237,16 @@
         }
         .close:hover {
             color: black;
+        }
+        
+        /* Save button container - FIXED POSITION */
+        .save-button-container {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 15px 0 0 0;
+            margin-top: 20px;
+            border-top: 1px solid #e1e5e9;
         }
         
         /* Help icons */
@@ -419,7 +431,10 @@
                 <!-- Dynamically populated by JavaScript -->
             </div>
             
-            <button type="button" onclick="saveUnobtainableSettings()" class="btn-full">Save Settings</button>
+            <!-- Fixed Save Button Container -->
+            <div class="save-button-container">
+                <button type="button" onclick="saveUnobtainableSettings()" class="btn-full">Save Settings</button>
+            </div>
         </div>
     </div>
 
@@ -446,7 +461,10 @@
                 <!-- Dynamically populated by JavaScript -->
             </div>
             
-            <button type="button" onclick="saveBlacklistedSettings()" class="btn-full">Save Settings</button>
+            <!-- Fixed Save Button Container -->
+            <div class="save-button-container">
+                <button type="button" onclick="saveBlacklistedSettings()" class="btn-full">Save Settings</button>
+            </div>
         </div>
     </div>
 
@@ -473,7 +491,10 @@
                 <!-- Dynamically populated by JavaScript -->
             </div>
             
-            <button type="button" onclick="saveRawSettings()" class="btn-full">Save Settings</button>
+            <!-- Fixed Save Button Container -->
+            <div class="save-button-container">
+                <button type="button" onclick="saveRawSettings()" class="btn-full">Save Settings</button>
+            </div>
         </div>
     </div>
 
