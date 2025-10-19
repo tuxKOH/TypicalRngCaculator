@@ -15,7 +15,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 from flask import Flask, render_template, request, jsonify
 import math
 import json
@@ -43,7 +42,7 @@ DEFAULT_SANS_DATA = {
 }
 
 DEFAULT_RAW_SANS = ["CTI (corrupted true insanity)", "error666", "negative error404", "anti god"]
-DEFAULT_LIMITED_SANS = ["CTI (corrupted true insanity)", "antigod", "clown", "undersanity", "roland"]
+DEFAULT_BLACKLISTED_SANS = ["CTI (corrupted true insanity)", "clown", "undersanity", "roland"]
 
 def search_sans(query: str, sans_list: List[str]) -> List[Tuple[str, float]]:
     if not query:
@@ -80,14 +79,14 @@ class SansCalculator:
     def __init__(self):
         self.sans_list = []
     
-    def setup(self, sans_data: Dict, raw_sans: List[str], limited_sans: List[str], include_limited: List[str], server_luck: int):
+    def setup(self, sans_data: Dict, raw_sans: List[str], blacklisted_sans: List[str], server_luck: int):
         self.sans_list = []
         self.server_luck = server_luck
         raw_set = set(raw_sans)
-        limited_set = set(limited_sans)
+        blacklisted_set = set(blacklisted_sans)
         
         for name, chance in sans_data.items():
-            if name in limited_set and name not in include_limited:
+            if name in blacklisted_set:
                 continue
                 
             is_raw = name in raw_set
@@ -223,10 +222,10 @@ def calculate():
         data = request.json
         server_luck = int(data.get('server_luck', 8))
         time_seconds = float(data.get('time_seconds', 3600))
-        include_limited = data.get('include_limited', [])
         custom_sans = data.get('custom_sans', {})
         selected_sans = data.get('selected_sans', [])
         custom_raw = data.get('custom_raw', [])
+        custom_blacklisted = data.get('custom_blacklisted', [])
         
         sans_data = DEFAULT_SANS_DATA.copy()
         sans_data.update(custom_sans)
@@ -237,10 +236,17 @@ def calculate():
             else:
                 custom_raw = []
         
+        if not isinstance(custom_blacklisted, list):
+            if isinstance(custom_blacklisted, str):
+                custom_blacklisted = [s.strip() for s in custom_blacklisted.split(',')] if custom_blacklisted else []
+            else:
+                custom_blacklisted = []
+        
         raw_sans = list(custom_raw)
+        blacklisted_sans = list(custom_blacklisted)
         
         calculator = SansCalculator()
-        calculator.setup(sans_data, raw_sans, DEFAULT_LIMITED_SANS, include_limited, server_luck)
+        calculator.setup(sans_data, raw_sans, blacklisted_sans, server_luck)
         
         probs, total_weight = calculator.calculate_probabilities()
         all_probabilities = calculator.probability_all_in_time(time_seconds)
